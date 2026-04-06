@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRAVA AI — Payments Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080C10;
+  --bg2:#0D1117;
+  --bg3:#111820;
+  --surface:#0F1923;
+  --surface2:#162030;
+  --border:#1E2D3D;
+  --border2:#243547;
+  --cyan:#00D4FF;
+  --cyan-dim:rgba(0,212,255,0.12);
+  --cyan-glow:rgba(0,212,255,0.25);
+  --red:#FF3B3B;
+  --red-dim:rgba(255,59,59,0.1);
+  --orange:#FF7B2C;
+  --orange-dim:rgba(255,123,44,0.1);
+  --green:#00FF88;
+  --green-dim:rgba(0,255,136,0.1);
+  --yellow:#FFD700;
+  --yellow-dim:rgba(255,215,0,0.1);
+  --purple:#A855F7;
+  --purple-dim:rgba(168,85,247,0.12);
+  --text:#E2EAF4;
+  --text2:#7A909F;
+  --text3:#3D5166;
+}
+body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,0.012) 2px,rgba(0,212,255,0.012) 4px);pointer-events:none;z-index:1000}
+
+.hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;position:sticky;top:0;z-index:100}
+.hdr-inner{max-width:1320px;margin:0 auto;display:flex;align-items:center;gap:24px;height:56px}
+.logo-wrap{display:flex;align-items:center;gap:10px}
+.logo-hex{width:34px;height:34px;background:var(--cyan-dim);border:1px solid var(--cyan);border-radius:6px;display:flex;align-items:center;justify-content:center;position:relative}
+.logo-hex::after{content:'';position:absolute;inset:-3px;border:1px solid var(--cyan);border-radius:8px;opacity:0.3;animation:hexblink 3s infinite}
+@keyframes hexblink{0%,100%{opacity:0.3}50%{opacity:0.7}}
+.logo-hex svg{width:16px;height:16px;fill:var(--cyan)}
+.logo-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--cyan);letter-spacing:2px;text-shadow:0 0 20px var(--cyan-glow)}
+.logo-tag{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:1px;font-family:'JetBrains Mono',monospace}
+.nav{display:flex;gap:2px;flex:1;margin-left:8px}
+.nav-btn{padding:5px 14px;border-radius:4px;font-size:11px;font-weight:500;color:var(--text3);cursor:pointer;border:1px solid transparent;background:none;transition:all 0.2s;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px}
+.nav-btn:hover{color:var(--cyan);border-color:var(--border2)}
+.nav-btn.active{color:var(--cyan);border-color:var(--cyan);background:var(--cyan-dim);text-shadow:0 0 10px var(--cyan-glow)}
+.sys-status{display:flex;align-items:center;gap:20px;margin-left:auto}
+.status-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);letter-spacing:0.5px}
+.dot{width:5px;height:5px;border-radius:50%}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.time-display{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan);border:1px solid var(--border);padding:4px 10px;border-radius:3px;background:var(--bg)}
+
+.main{max-width:1320px;margin:0 auto;padding:20px 24px}
+.sec-label{font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;position:relative;overflow:hidden;transition:border-color 0.2s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.cyan::before{background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.stat-card.red::before{background:linear-gradient(90deg,transparent,var(--red),transparent)}
+.stat-card.orange::before{background:linear-gradient(90deg,transparent,var(--orange),transparent)}
+.stat-card.green::before{background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.stat-card:hover{border-color:var(--border2)}
+.stat-id{font-size:9px;color:var(--text3);letter-spacing:1px;margin-bottom:10px}
+.stat-val{font-size:28px;font-weight:700;line-height:1;margin-bottom:6px;font-family:'Syne',sans-serif}
+.stat-val.cyan{color:var(--cyan);text-shadow:0 0 20px var(--cyan-glow)}
+.stat-val.red{color:var(--red)}
+.stat-val.orange{color:var(--orange)}
+.stat-val.green{color:var(--green)}
+.stat-sub{font-size:10px;color:var(--text3)}
+
+.alert-panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:18px;position:relative;overflow:hidden}
+.alert-panel::before{content:'ALERT MATRIX';position:absolute;top:10px;right:16px;font-size:8px;letter-spacing:2px;color:var(--text3)}
+.alert-panel-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.alert-panel-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px}
+.blink-badge{font-size:9px;letter-spacing:1.5px;padding:3px 8px;border-radius:2px;background:var(--red-dim);color:var(--red);border:1px solid var(--red);animation:badgeblink 1s infinite}
+@keyframes badgeblink{0%,100%{opacity:1}50%{opacity:0.5}}
+.alerts-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.a-card{background:var(--bg3);border-radius:4px;padding:12px;border:1px solid var(--border);position:relative;overflow:hidden}
+.a-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px}
+.a-card.p0::after{background:var(--red)}
+.a-card.p1::after{background:var(--orange)}
+.a-card.pred::after{background:var(--purple)}
+.a-card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:6px}
+.a-card-name{font-size:10px;font-weight:600;color:var(--text);letter-spacing:0.3px;line-height:1.3}
+.chip{font-size:8px;letter-spacing:1px;padding:2px 6px;border-radius:2px;white-space:nowrap;font-weight:700}
+.chip-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,59,59,0.3)}
+.chip-orange{background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,123,44,0.3)}
+.chip-purple{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(168,85,247,0.3)}
+.chip-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,136,0.3)}
+.chip-cyan{background:var(--cyan-dim);color:var(--cyan);border:1px solid rgba(0,212,255,0.3)}
+.a-rows{display:flex;flex-direction:column;gap:5px}
+.a-row{display:flex;justify-content:space-between;align-items:center;font-size:10px}
+.a-key{color:var(--text3)}
+.a-val{font-weight:600}
+.a-val.red{color:var(--red)}
+.a-val.orange{color:var(--orange)}
+.a-val.green{color:var(--green)}
+.a-val.purple{color:var(--purple)}
+.a-val.cyan{color:var(--cyan)}
+.a-bigval{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--purple);margin:6px 0 4px;text-shadow:0 0 15px rgba(168,85,247,0.4)}
+.alert-footer{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text3)}
+
+.filt-row{display:flex;gap:6px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.filt-btn{padding:4px 12px;border-radius:3px;font-size:10px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text3);transition:all 0.15s;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px}
+.filt-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.filt-btn.active{background:var(--cyan-dim);color:var(--cyan);border-color:var(--cyan)}
+.search-box{flex:1;max-width:260px;padding:5px 10px;border-radius:3px;border:1px solid var(--border);background:var(--surface);font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;transition:border-color 0.2s}
+.search-box::placeholder{color:var(--text3)}
+.search-box:focus{border-color:var(--cyan)}
+
+.inc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.inc-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.inc-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;transition:all 0.2s}
+.inc-card.P0::before{background:var(--red)}
+.inc-card.P1::before{background:var(--orange)}
+.inc-card.P2::before{background:var(--yellow)}
+.inc-card:hover{border-color:var(--border2);background:var(--surface2);transform:translateY(-1px)}
+.inc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.inc-chips{display:flex;gap:5px}
+.inc-time{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.inc-lob{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;letter-spacing:0.3px}
+.inc-meta{font-size:9px;color:var(--text3);margin-bottom:12px;letter-spacing:0.3px}
+.inc-sr-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px}
+.inc-sr-label{font-size:9px;color:var(--text3);letter-spacing:1px}
+.inc-sr-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--red)}
+.bar-bg{height:3px;background:var(--border);border-radius:2px;margin-bottom:12px}
+.bar-fill{height:3px;border-radius:2px}
+.rc-box{background:rgba(255,123,44,0.06);border:1px solid rgba(255,123,44,0.2);border-radius:4px;padding:8px;margin-bottom:6px}
+.rc-lbl{font-size:8px;letter-spacing:1.5px;color:var(--orange);margin-bottom:3px}
+.rc-val{font-size:10px;color:rgba(255,123,44,0.9);font-weight:500}
+.act-box{background:var(--cyan-dim);border:1px solid rgba(0,212,255,0.2);border-radius:4px;padding:8px}
+.act-lbl{font-size:8px;letter-spacing:1.5px;color:var(--cyan);margin-bottom:3px}
+.act-val{font-size:10px;color:var(--cyan);font-weight:500}
+
+.fund-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.chart-panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:18px}
+.panel-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.panel-title::before{content:'//';color:var(--cyan);font-size:10px}
+.chart-wrap{height:240px;position:relative}
+.pred-panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;margin-bottom:18px}
+.pred-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pred-item{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:12px}
+.pred-item.next{border-color:var(--purple);background:rgba(168,85,247,0.05)}
+.pred-t{font-size:9px;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.pred-v{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--purple);margin-bottom:4px}
+.pred-txns{font-size:9px;color:var(--text3);margin-bottom:8px}
+.conf-label{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-bottom:3px}
+.conf-label span{color:var(--purple)}
+.conf-bg{height:2px;background:var(--border);border-radius:1px}
+.conf-fill{height:2px;border-radius:1px;background:var(--purple)}
+.pred-total{margin-top:12px;padding:10px 14px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.2);border-radius:4px;font-size:10px;color:var(--purple)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel-sm{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px}
+.pg-item{background:var(--bg3);border-radius:4px;padding:12px;margin-bottom:8px;border:1px solid var(--border)}
+.pg-name-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text);font-family:'Syne',sans-serif}
+.pg-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:9px;color:var(--text3);margin-bottom:8px}
+.pg-meta span{font-weight:500;color:var(--text2)}
+.lob-item{background:var(--bg3);border-radius:4px;padding:10px;margin-bottom:6px;border:1px solid var(--border)}
+.lob-name-row{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:600;color:var(--text);margin-bottom:3px}
+.lob-meta{font-size:9px;color:var(--text3);margin-bottom:5px}
+
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;max-width:580px;width:100%;max-height:82vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,212,255,0.1)}
+.modal-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2)}
+.modal-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--cyan);letter-spacing:1px}
+.modal-close{width:26px;height:26px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3);transition:all 0.15s}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-body{padding:18px 22px}
+.modal-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.modal-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.ms-item{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px}
+.ms-lbl{font-size:8px;letter-spacing:1.5px;color:var(--text3);margin-bottom:5px}
+.ms-val{font-size:16px;font-weight:700;font-family:'Syne',sans-serif}
+.pre-box{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap;color:var(--text2);line-height:1.8}
+
+@media(max-width:900px){
+  .stats-row,.fund-stats{grid-template-columns:repeat(2,1fr)}
+  .alerts-4,.pred-4{grid-template-columns:repeat(2,1fr)}
+  .inc-grid,.two-col{grid-template-columns:1fr}
+  .modal-stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .stats-row,.fund-stats{grid-template-columns:1fr}
+  .hdr-inner{flex-wrap:wrap;height:auto;padding:10px 0;gap:10px}
+  .sys-status{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="logo-wrap">
+      <div class="logo-hex">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">PRAVA AI</div>
+        <div class="logo-tag">PAYMENTS COMMAND CENTER</div>
+      </div>
+    </div>
+    <div class="nav" id="nav">
+      <button class="nav-btn active" onclick="switchTab('incidents',this)">[01] INCIDENTS</button>
+      <button class="nav-btn" onclick="switchTab('funds',this)">[02] FUND UTILIZATION</button>
+    </div>
+    <div class="sys-status">
+      <div class="status-item"><span class="dot dot-red"></span>38K INCIDENTS</div>
+      <div class="status-item"><span class="dot dot-green"></span>LIVE FEED</div>
+      <div class="time-display" id="clock">--:--:--</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- INCIDENTS TAB -->
+  <div id="tab-incidents">
+    <div class="sec-label">// SYSTEM METRICS</div>
+    <div class="stats-row">
+      <div class="stat-card cyan">
+        <div class="stat-id">SYS_001 · TOTAL_INCIDENTS</div>
+        <div class="stat-val cyan">38,433</div>
+        <div class="stat-sub">AI DETECTED ANOMALIES</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-id">SYS_002 · CRITICAL_P0</div>
+        <div class="stat-val red">244</div>
+        <div class="stat-sub">IMMEDIATE ACTION REQUIRED</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-id">SYS_003 · GTV_AT_RISK</div>
+        <div class="stat-val orange">₹6.97Cr</div>
+        <div class="stat-sub">6,612 AFFECTED TRANSACTIONS</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-id">SYS_004 · OVERALL_SR</div>
+        <div class="stat-val green">68.1%</div>
+        <div class="stat-sub">BASELINE MONITORING ACTIVE</div>
+      </div>
+    </div>
+
+    <div class="sec-label">// CRITICAL ALERT MATRIX</div>
+    <div class="alert-panel">
+      <div class="alert-panel-hdr">
+        <span style="font-size:14px">⚡</span>
+        <span class="alert-panel-title">ACTIVE THREAT DETECTIONS</span>
+        <span class="blink-badge">● LIVE</span>
+      </div>
+      <div class="alerts-4">
+        <div class="a-card p0">
+          <div class="a-card-head"><span class="a-card-name">EDU FEES SR CRITICAL DROP</span><span class="chip chip-red">P0</span></div>
+          <div class="a-rows">
+            <div class="a-row"><span class="a-key">CURRENT_SR</span><span class="a-val red">10.0%</span></div>
+            <div class="a-row"><span class="a-key">BASELINE</span><span class="a-val">70.81%</span></div>
+            <div class="a-row"><span class="a-key">FAILED_TXN</span><span class="a-val red">95</span></div>
+            <div class="a-row"><span class="a-key">DELTA</span><span class="a-val orange">−60.81%</span></div>
+          </div>
+        </div>
+        <div class="a-card p0">
+          <div class="a-card-head"><span class="a-card-name">RUPAY NETWORK DEGRADED</span><span class="chip chip-red">P0</span></div>
+          <div class="a-rows">
+            <div class="a-row"><span class="a-key">NETWORK_SR</span><span class="a-val red">6.5%</span></div>
+            <div class="a-row"><span class="a-key">ACTION</span><span class="a-val cyan">SWITCH_BACKUP</span></div>
+            <div class="a-row"><span class="a-key">FAILED_TXN</span><span class="a-val red">37</span></div>
+            <div class="a-row"><span class="a-key">INCIDENTS</span><span class="a-val red">10,071</span></div>
+          </div>
+        </div>
+        <div class="a-card p1">
+          <div class="a-card-head"><span class="a-card-name">PG: HAXORPAY TIMEOUT</span><span class="chip chip-orange">P1</span></div>
+          <div class="a-rows">
+            <div class="a-row"><span class="a-key">GATEWAY_SR</span><span class="a-val orange">68.52%</span></div>
+            <div class="a-row"><span class="a-key">BLOCKED_GTV</span><span class="a-val red">₹45.3Cr</span></div>
+            <div class="a-row"><span class="a-key">FAILURE</span><span class="a-val">BANK_TIMEOUT</span></div>
+            <div class="a-row"><span class="a-key">ROUTE_TO</span><span class="a-val cyan">SAYU</span></div>
+          </div>
+        </div>
+        <div class="a-card pred">
+          <div class="a-card-head"><span class="a-card-name">FUND FORECAST // T+15</span><span class="chip chip-purple">PREDICT</span></div>
+          <div class="a-bigval">₹46.3L</div>
+          <div class="a-rows">
+            <div class="a-row"><span class="a-key">EXPECTED_TXN</span><span class="a-val purple">178</span></div>
+            <div class="a-row"><span class="a-key">WINDOW</span><span class="a-val">00:00–00:15</span></div>
+            <div class="a-row"><span class="a-key">CONFIDENCE</span><span class="a-val green">80%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="alert-footer">
+        <div><b style="color:var(--red)">244</b> CRITICAL &nbsp;·&nbsp; <b style="color:var(--orange)">16,306</b> HIGH &nbsp;·&nbsp; <b style="color:var(--yellow)">21,883</b> MEDIUM &nbsp;·&nbsp; GTV_RISK: <b style="color:var(--red)">₹6.97Cr</b></div>
+        <div>LAST_UPDATE: <b style="color:var(--green)">T+00:00</b></div>
+      </div>
+    </div>
+
+    <div class="sec-label">// INCIDENT FEED</div>
+    <div class="filt-row">
+      <button class="filt-btn active" onclick="setFilter('ALL',this)">ALL</button>
+      <button class="filt-btn" onclick="setFilter('P0',this)">P0 [244]</button>
+      <button class="filt-btn" onclick="setFilter('P1',this)">P1 [16,306]</button>
+      <button class="filt-btn" onclick="setFilter('P2',this)">P2 [21,883]</button>
+      <input class="search-box" id="search-input" placeholder="// SEARCH: bank / lob / network" oninput="renderInc()">
+    </div>
+    <div class="inc-grid" id="inc-grid"></div>
+  </div>
+
+  <!-- FUNDS TAB -->
+  <div id="tab-funds" style="display:none">
+    <div class="sec-label">// FUND METRICS</div>
+    <div class="fund-stats">
+      <div class="stat-card cyan">
+        <div class="stat-id">FUND_001 · TOTAL_GTV</div>
+        <div class="stat-val cyan" style="font-size:22px">₹321Cr</div>
+        <div class="stat-sub">135,753 TRANSACTIONS</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-id">FUND_002 · CAPTURED</div>
+        <div class="stat-val green" style="font-size:22px">₹205.8Cr</div>
+        <div class="stat-sub">64.1% UTILIZATION RATE</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-id">FUND_003 · FAILED_GTV</div>
+        <div class="stat-val red" style="font-size:22px">₹115.3Cr</div>
+        <div class="stat-sub">35.9% LOSS RATE</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(168,85,247,0.4)">
+        <div class="stat-id" style="color:var(--purple)">FUND_004 · T+15_FORECAST</div>
+        <div class="stat-val" style="font-size:22px;color:var(--purple);text-shadow:0 0 15px rgba(168,85,247,0.4)">₹46.3L</div>
+        <div class="stat-sub">178 TXN · 80% CONFIDENCE</div>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <div class="panel-title">GTV TREND + NEURAL FORECAST (NEXT 60 MIN)</div>
+      <div class="chart-wrap"><canvas id="gtv-chart"></canvas></div>
+    </div>
+
+    <div class="pred-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="panel-title" style="margin-bottom:0">FUND REQUIREMENT FORECAST</div>
+        <span class="chip chip-purple">AI · NEURAL NET</span>
+      </div>
+      <div class="pred-4">
+        <div class="pred-item next">
+          <div class="pred-t">T+00:00–00:15 <span class="chip chip-purple" style="font-size:7px">NEXT</span></div>
+          <div class="pred-v">₹46.3L</div>
+          <div class="pred-txns">178 TRANSACTIONS</div>
+          <div class="conf-label">CONFIDENCE<span>80%</span></div>
+          <div class="conf-bg"><div class="conf-fill" style="width:80%"></div></div>
+        </div>
+        <div class="pred-item">
+          <div class="pred-t">T+00:15–00:30</div>
+          <div class="pred-v">₹47.4L</div>
+          <div class="pred-txns">183 TRANSACTIONS</div>
+          <div class="conf-label">CONFIDENCE<span>75%</span></div>
+          <div class="conf-bg"><div class="conf-fill" style="width:75%"></div></div>
+        </div>
+        <div class="pred-item">
+          <div class="pred-t">T+00:30–00:45</div>
+          <div class="pred-v">₹50.0L</div>
+          <div class="pred-txns">193 TRANSACTIONS</div>
+          <div class="conf-label">CONFIDENCE<span>70%</span></div>
+          <div class="conf-bg"><div class="conf-fill" style="width:70%"></div></div>
+        </div>
+        <div class="pred-item">
+          <div class="pred-t">T+00:45–01:00</div>
+          <div class="pred-v">₹50.5L</div>
+          <div class="pred-txns">194 TRANSACTIONS</div>
+          <div class="conf-label">CONFIDENCE<span>65%</span></div>
+          <div class="conf-bg"><div class="conf-fill" style="width:65%"></div></div>
+        </div>
+      </div>
+      <div class="pred-total">// TOTAL_FUND_REQUIREMENT (T+60MIN): <b>₹1.94Cr</b> &nbsp;·&nbsp; 748 TRANSACTIONS PROJECTED</div>
+    </div>
+
+    <div class="sec-label">// GATEWAY + LOB BREAKDOWN</div>
+    <div class="two-col">
+      <div class="panel-sm">
+        <div class="panel-title">PAYMENT GATEWAYS</div>
+        <div class="pg-item">
+          <div class="pg-name-row">HAXORPAY <span class="chip chip-green">68.52%</span></div>
+          <div class="pg-meta">TOTAL_GTV <span>₹143.8Cr</span> CAPTURED <span style="color:var(--green)">₹98.6Cr</span> BLOCKED <span style="color:var(--red)">₹45.3Cr</span> TXN_COUNT <span>62,067</span></div>
+          <div class="conf-bg" style="height:3px"><div class="conf-fill" style="width:68.52%;background:var(--green)"></div></div>
+        </div>
+        <div class="pg-item">
+          <div class="pg-name-row">SAYU <span class="chip chip-green">67.68%</span></div>
+          <div class="pg-meta">TOTAL_GTV <span>₹177.2Cr</span> CAPTURED <span style="color:var(--green)">₹119.9Cr</span> BLOCKED <span style="color:var(--red)">₹57.3Cr</span> TXN_COUNT <span>73,686</span></div>
+          <div class="conf-bg" style="height:3px"><div class="conf-fill" style="width:67.68%;background:var(--green)"></div></div>
+        </div>
+      </div>
+      <div class="panel-sm">
+        <div class="panel-title">LINE OF BUSINESS</div>
+        <div class="lob-item">
+          <div class="lob-name-row">EDU · TUITION_FEES <span class="chip chip-green">70.81%</span></div>
+          <div class="lob-meta">₹243.9Cr · 101,808 TXN</div>
+          <div class="conf-bg"><div class="conf-fill" style="width:70.81%;background:var(--green)"></div></div>
+        </div>
+        <div class="lob-item">
+          <div class="lob-name-row">EDU · COLLEGE_FEES <span class="chip chip-cyan">64.99%</span></div>
+          <div class="lob-meta">₹32.6Cr · 12,282 TXN</div>
+          <div class="conf-bg"><div class="conf-fill" style="width:64.99%;background:var(--cyan)"></div></div>
+        </div>
+        <div class="lob-item">
+          <div class="lob-name-row">EDU · SCHOOL_FEES <span class="chip chip-cyan">62.96%</span></div>
+          <div class="lob-meta">₹9.9Cr · 4,411 TXN</div>
+          <div class="conf-bg"><div class="conf-fill" style="width:62.96%;background:var(--cyan)"></div></div>
+        </div>
+        <div class="lob-item">
+          <div class="lob-name-row">WALLET · ACCOUNT_TRANSFER <span class="chip chip-orange">48.59%</span></div>
+          <div class="lob-meta">₹2.6Cr · 1,274 TXN</div>
+          <div class="conf-bg"><div class="conf-fill" style="width:48.59%;background:var(--orange)"></div></div>
+        </div>
+        <div class="lob-item">
+          <div class="lob-name-row">WALLET · LOAD_WALLET <span class="chip chip-red">29.0%</span></div>
+          <div class="lob-meta">₹31.9Cr · 15,976 TXN</div>
+          <div class="conf-bg"><div class="conf-fill" style="width:29%;background:var(--red)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">// INCIDENT DETAIL VIEW</div>
+      <button class="modal-close" onclick="document.getElementById('modal').style.display='none'">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-chips" id="modal-chips"></div>
+      <div class="modal-stats" id="modal-stats"></div>
+      <pre class="pre-box" id="modal-insight"></pre>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const INCIDENTS=[
+  {AIID:8323,time_bucket:"2026-01-20 12:15:00",LOB:"EDUCATION_FEES_TUITION_FEES",instrument:"CC",payment_gateway:"HAXORPAY",bank:"Yes Bank",network:"RuPay",success_rate:10.0,baseline_sr:70.81,anomaly_score:100.0,root_cause:{primary_root_cause:"bank: Yes Bank",primary_sr:40.85},severity:"P0",impact:{affected_txn_count:6,failed_txns:9,gtv_at_risk:442786.97},action:{action:"Disable routing to Yes Bank",urgency:"IMMEDIATE"},insight:"🚨 P0 INCIDENT DETECTED\n\nTIMESTAMP: 2026-01-20 12:15:00\nLOB: EDUCATION_FEES_TUITION_FEES\nINSTRUMENT: CC\n\nSUCCESS_RATE: 10.0%\nBASELINE_SR:  70.81%\nDELTA:        -60.81%\n\nROOT_CAUSE:   bank: Yes Bank\nCONTRIBUTOR:  network: RuPay\n\nIMPACT:\n  AFFECTED_TXN: 6\n  FAILED_TXN:   9\n  GTV_AT_RISK:  \u20b9442,787\n\nACTION [IMMEDIATE]:\n  Disable routing to Yes Bank\n  Reason: 40.85% SR below threshold"},
+  {AIID:8233,time_bucket:"2026-01-20 12:00:00",LOB:"EDUCATION_FEES_TUITION_FEES",instrument:"CC",payment_gateway:"HAXORPAY",bank:"Yes Bank",network:"RuPay",success_rate:10.0,baseline_sr:70.81,anomaly_score:100.0,root_cause:{primary_root_cause:"bank: Yes Bank",primary_sr:40.85},severity:"P0",impact:{affected_txn_count:6,failed_txns:9,gtv_at_risk:348395.61},action:{action:"Disable routing to Yes Bank",urgency:"IMMEDIATE"},insight:"🚨 P0 INCIDENT DETECTED\n\nTIMESTAMP: 2026-01-20 12:00:00\nLOB: EDUCATION_FEES_TUITION_FEES\nINSTRUMENT: CC\n\nSUCCESS_RATE: 10.0%\nBASELINE_SR:  70.81%\nDELTA:        -60.81%\n\nROOT_CAUSE:   bank: Yes Bank\nCONTRIBUTOR:  network: RuPay\n\nIMPACT:\n  AFFECTED_TXN: 6\n  FAILED_TXN:   9\n  GTV_AT_RISK:  \u20b9348,396\n\nACTION [IMMEDIATE]:\n  Disable routing to Yes Bank\n  Reason: 40.85% SR below threshold"}
+];
+
+let activeFilter='ALL';
+
+function sevChip(s){return{P0:'chip-red',P1:'chip-orange',P2:'chip-orange'}[s]||'chip-cyan'}
+function urgChip(u){return{IMMEDIATE:'chip-red',HIGH:'chip-orange',MEDIUM:'chip-orange'}[u]||'chip-cyan'}
+function srBarHex(sr){return sr<30?'#FF3B3B':sr<60?'#FF7B2C':'#00FF88'}
+
+function setFilter(f,btn){
+  activeFilter=f;
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInc();
+}
+
+function renderInc(){
+  const term=(document.getElementById('search-input')||{}).value||'';
+  let list=activeFilter==='ALL'?INCIDENTS:INCIDENTS.filter(i=>i.severity===activeFilter);
+  if(term) list=list.filter(i=>[i.LOB,i.bank,i.network].join(' ').toLowerCase().includes(term.toLowerCase()));
+  document.getElementById('inc-grid').innerHTML=list.length?list.map(inc=>`
+    <div class="inc-card ${inc.severity}" onclick="openModal(${inc.AIID})">
+      <div class="inc-top">
+        <div class="inc-chips">
+          <span class="chip ${sevChip(inc.severity)}">${inc.severity}</span>
+          <span class="chip ${urgChip(inc.action.urgency)}">${inc.action.urgency}</span>
+        </div>
+        <span class="inc-time">${inc.time_bucket.split(' ')[1]}</span>
+      </div>
+      <div class="inc-lob">${inc.LOB}</div>
+      <div class="inc-meta">${inc.bank} · ${inc.network} · ${inc.payment_gateway}</div>
+      <div class="inc-sr-row">
+        <span class="inc-sr-label">SUCCESS_RATE</span>
+        <span class="inc-sr-val">${inc.success_rate}%</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${inc.success_rate}%;background:${srBarHex(inc.success_rate)}"></div></div>
+      <div class="rc-box">
+        <div class="rc-lbl">ROOT_CAUSE</div>
+        <div class="rc-val">${inc.root_cause.primary_root_cause}</div>
+      </div>
+      <div class="act-box">
+        <div class="act-lbl">ACTION</div>
+        <div class="act-val">${inc.action.action}</div>
+      </div>
+    </div>
+  `).join(''):'<div style="color:var(--text3);font-size:11px;padding:20px;grid-column:1/-1">// NO INCIDENTS MATCH FILTER</div>';
+}
+
+function openModal(id){
+  const inc=INCIDENTS.find(i=>i.AIID===id);if(!inc)return;
+  document.getElementById('modal-chips').innerHTML=`
+    <span class="chip ${sevChip(inc.severity)}">${inc.severity}</span>
+    <span class="chip ${urgChip(inc.action.urgency)}">${inc.action.urgency}</span>
+    <span class="chip chip-cyan">${inc.instrument}</span>
+    <span class="chip chip-cyan">${inc.payment_gateway}</span>
+    <span class="chip chip-cyan">AIID_${inc.AIID}</span>
+  `;
+  document.getElementById('modal-stats').innerHTML=`
+    <div class="ms-item"><div class="ms-lbl">GTV_AT_RISK</div><div class="ms-val" style="color:var(--red)">\u20b9${Math.round(inc.impact.gtv_at_risk).toLocaleString()}</div></div>
+    <div class="ms-item"><div class="ms-lbl">ANOMALY_SCORE</div><div class="ms-val" style="color:var(--orange)">${inc.anomaly_score}</div></div>
+    <div class="ms-item"><div class="ms-lbl">AFFECTED_TXN</div><div class="ms-val" style="color:var(--cyan)">${inc.impact.affected_txn_count}</div></div>
+    <div class="ms-item"><div class="ms-lbl">BASELINE_SR</div><div class="ms-val" style="color:var(--green)">${inc.baseline_sr}%</div></div>
+  `;
+  document.getElementById('modal-insight').textContent=inc.insight;
+  document.getElementById('modal').style.display='flex';
+}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-incidents').style.display=tab==='incidents'?'block':'none';
+  document.getElementById('tab-funds').style.display=tab==='funds'?'block':'none';
+  if(tab==='funds')setTimeout(buildChart,80);
+}
+
+let chartInst=null;
+function buildChart(){
+  const canvas=document.getElementById('gtv-chart');
+  if(!canvas)return;
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const hist=[44.35,51.81,50.19,49.49,46.30,44.83,47.16,46.24,50.22,44.79];
+  const hLabels=['21:15','21:30','21:45','22:00','22:15','22:30','22:45','23:00','23:15','23:30'];
+  const pred=[46.27,47.43,50.02,50.48];
+  const pLabels=['00:00','00:15','00:30','00:45'];
+  const labels=[...hLabels,...pLabels];
+  const hData=[...hist,...pred.map(()=>null)];
+  const pData=[...hist.map(()=>null),hist[hist.length-1],...pred];
+  chartInst=new Chart(canvas,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'HISTORICAL GTV (L)',data:hData,borderColor:'#00D4FF',backgroundColor:'rgba(0,212,255,0.05)',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#00D4FF',borderWidth:1.5},
+      {label:'FORECAST GTV (L)',data:pData,borderColor:'#A855F7',backgroundColor:'rgba(168,85,247,0.05)',borderDash:[6,3],tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:'#A855F7',borderWidth:1.5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#7A909F',font:{family:'JetBrains Mono',size:10},boxWidth:8,boxHeight:8,padding:16}}},
+      scales:{
+        y:{ticks:{color:'#3D5166',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(30,45,61,0.8)'},border:{display:false}},
+        x:{ticks:{color:'#3D5166',font:{family:'JetBrains Mono',size:10}},grid:{color:'rgba(30,45,61,0.8)'},border:{display:false}}
+      }
+    }
+  });
+}
+
+function tick(){document.getElementById('clock').textContent=new Date().toTimeString().slice(0,8)}
+tick();setInterval(tick,1000);
+renderInc();
+</script>
+</body>
+</html>
